@@ -1,37 +1,42 @@
 #!/usr/bin/env python3
-"""Entry program for make.fun's news-image-20261123 bounty.
+"""Entrypoint for the news-image-20261123 make.fun entry.
 
-The entry is a single picture: entry.png, kept beside this file, sums up
-the world news of Monday 23 November 2026 in a dense front page: 52 dated
-stories in 7 regions, a 4-story lead strip, a day-in-numbers box and a
-ticker of six more stories. The sandbox has no network and reads nothing
-but the image this program writes, so the program's whole job is to place
-those exact bytes at the output location:
-
-    <output dir>/entry.png
-
-The output dir is $MAKEFUN_OUTPUT_DIR when that variable is set (a local
-run) and /output otherwise (the grader's container). Run it locally with:
-
-    mkdir -p out && MAKEFUN_OUTPUT_DIR=out python3 main.py
-
-Python 3.13, standard library only. The copy is byte for byte, so two runs
-always write the same file.
+The deliverable for this competition is a single PNG that lives next to
+this script as ``entry.png``.  Running this program publishes that image
+by copying it into ``/output/entry.png`` (creating ``/output`` when it is
+not there yet) and then double-checks that the published file is present
+before reporting success.
 """
 
-import os
 import shutil
+import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-SOURCE = HERE / "entry.png"
+IMAGE_NAME = "entry.png"
+DESTINATION_DIR = Path("/output")
 
 
-def main() -> None:
-    out_dir = Path(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
-    out_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(SOURCE, out_dir / "entry.png")
+def publish_image() -> int:
+    """Copy the bundled entry image into /output; return an exit code."""
+    source = Path(__file__).resolve().parent / IMAGE_NAME
+
+    if not source.is_file():
+        print(f"error: expected entry image at {source}, but it is missing",
+              file=sys.stderr)
+        return 1
+
+    DESTINATION_DIR.mkdir(parents=True, exist_ok=True)
+    target = DESTINATION_DIR / IMAGE_NAME
+    shutil.copyfile(source, target)
+
+    if not target.is_file():
+        print(f"error: copy finished but {target} was not created",
+              file=sys.stderr)
+        return 1
+
+    print(f"published {target} ({target.stat().st_size} bytes)")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(publish_image())
